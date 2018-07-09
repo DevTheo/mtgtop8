@@ -112,6 +112,46 @@ var fetchEvent = function(eventId, callback) {
 	});
 };
 
+var formatInfo = {
+	standard: { fParam: "ST" },
+	modern: { fParam: "MO" },
+	vintage: { fParam: "VI" },
+	legacy: { fParam: "LE" },
+	commanderduel: { fParam: "EDH" },
+	commandermtgo: { fParam: "EDHM" },
+	pauper: { fParam: "PAU" },
+	peasant: { fParam: "PEA" },
+	extended: { fParam: "EX" }
+}
+
+var fetchEvents = function(format, page, callback) {
+	if (arguments.length === 1) return fetchStandardEvents(1, page);
+
+	req.post('http://mtgtop8.com/format?f=' + format.fParam + '&meta=52', { form:{ cp:page } }, function(err, res) {
+		if (err) return callback(err);
+
+		var result = [];
+
+		var $ = cheerio.load(iconv.decode(res.body, 'latin-1'));
+
+		var table = $('div div table tr td[width="40%"] > table').eq(1);
+		$('tr[height="30"]', table).each(function(i, div) {
+			var link = $('td a', div).attr('href');
+			var date = $('td[align="right"]', div).text();
+
+			result.push({
+				title: $('td a', div).text(),
+				id: parseInt(link.match(/e\=(\d*)/)[1]),
+				stars: $('td[width="15%"] img[src="graph/star.png"]', div).length,
+				bigstars: $('td[width="15%"] img[src="graph/bigstar.png"]', div).length,
+				date: moment(date, 'DD/MM/YY').toDate()
+			});
+		});
+
+		callback(null, result);
+	});
+};
+
 var fetchStandardEvents = function(page, callback) {
 	if (arguments.length === 1) return fetchStandardEvents(1, page);
 
@@ -168,10 +208,44 @@ var fetchModernEvents = function(page, callback) {
 	});
 };
 
+var fetchPauperEvents = function(page, callback) {
+	return fetchEvents(formatInfo.pauper, page, callback);
+}
+
+var fetchDuelCommanderEvents = function(page, callback) {
+	return fetchEvents(formatInfo.commanderduel, page, callback);
+}
+
+var fetchMtgoCommanderEvents = function(page, callback) {
+	return fetchEvents(formatInfo.commandermtgo, page, callback);
+}
+
+var fetchLegacyEvents = function(page, callback) {
+	return fetchEvents(formatInfo.legacy, page, callback);
+}
+
+var fetchExtendedEvents = function(page, callback) {
+	return fetchEvents(formatInfo.extended, page, callback);
+}
+
+var fetchPeasantEvents = function(page, callback) {
+	return fetchEvents(formatInfo.peasant, page, callback);
+}
+
+var fetchVintageEvents = function(page, callback) {
+	return fetchEvents(formatInfo.vintage, page, callback);
+}
 
 module.exports = {
 	standardEvents: fetchStandardEvents,
 	modernEvents: fetchModernEvents,
+	pauperEvents: fetchPauperEvents,
+	duelCommanderEvents: fetchDuelCommanderEvents,
+	mtgoCommanderEvents: fetchMtgoCommanderEvents,
+	legacyEvents: fetchLegacyEvents,
+	extendedEvents: fetchExtendedEvents,
+	peasantEvents: fetchPeasantEvents,
+	vintageEvents : fetchVintageEvents,
 	eventInfo: fetchEventInfo,
 	event: fetchEvent,
 	deck: fetchDeck
